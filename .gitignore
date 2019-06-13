@@ -1,0 +1,6 @@
+.DS_Store
+.bloop
+.metals
+data/full-game
+project/
+target/
