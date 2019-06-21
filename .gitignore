@@ -4,3 +4,7 @@
 data/full-game
 project/
 target/
+.venv
+.idea
+data/first_half.txt
+data/second_half.txt
