@@ -8,3 +8,4 @@ target/
 .idea
 data/first_half.txt
 data/second_half.txt
+*.iml
