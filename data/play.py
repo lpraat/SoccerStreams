@@ -1,31 +1,40 @@
 import time
+from confluent_kafka import Producer
 
-from kafka import KafkaProducer
 
-producer = KafkaProducer(bootstrap_servers='localhost:9092')
+def delivery_report(err, msg):
+    """ Called once for each message produced to indicate delivery result.
+        Triggered by poll() or flush(). """
+    if err is not None:
+        print('Message delivery failed: {}'.format(err))
 
-with open('first_half.txt', 'r') as first_half:
 
-    # Send the first event
-    event_str = first_half.readline()[:-1]
-    start_event_time = int(event_str.split(",")[1])
-    producer.send('test', event_str.encode('ascii'))
-    elapsed = time.time()
+def play(producer, half_path, topic='test'):
+    with open(half_path, 'r') as half:
 
-    # Send the rest
-    for line in first_half:
-        event_str = line[:-1]
-        timestamp = int(event_str.split(",")[1])
+        # Send the first event
+        event_str = half.readline()[:-1]
+        start_event_time = int(event_str.split(",")[1])
+        producer.poll(0)
+        producer.produce(topic, event_str.encode('ascii'), callback=delivery_report)
+        elapsed = time.time()
 
-        real_diff = (timestamp - start_event_time) * 10 ** -12
-        diff = time.time() - elapsed
+        # Send the rest
+        for line in half:
+            event_str = line[:-1]
+            timestamp = int(event_str.split(",")[1])
 
-        while diff < real_diff:
-            diff = time.time() - elapsed
+            real_diff = (timestamp - start_event_time) * 10 ** -12
 
-        if diff > real_diff + 0.01:
-            elapsed += (diff - real_diff)
+            while time.time() - elapsed < real_diff:
+                pass
 
-        producer.send('test', event_str.encode('ascii'))
+            producer.poll(0)
+            producer.produce(topic, event_str.encode('ascii'), callback=delivery_report)
 
-    producer.flush()
+        producer.flush()
+
+
+if __name__ == '__main__':
+    producer = Producer({'bootstrap.servers': 'localhost:9092'})
+    play(producer, 'first_half.txt', 'test')
