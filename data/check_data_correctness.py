@@ -1,4 +1,3 @@
-
 def check_data_correctness(half, start_time):
     last_ts = 0
 
@@ -11,13 +10,12 @@ def check_data_correctness(half, start_time):
             timestamp = int(split[1])
 
             if id == 1:
-                print(f"Interruption begin after {(timestamp - start_time)*10**-12} seconds")
+                print(f"Interruption begin after {(timestamp - start_time) * 10 ** -12} seconds")
 
             if id == 0:
-                print(f"Interruption end after {(timestamp - start_time)*10**-12} seconds")
+                print(f"Interruption end after {(timestamp - start_time) * 10 ** -12} seconds")
 
-
-            assert(timestamp > last_ts)
+            assert (timestamp > last_ts)
             last_ts = timestamp
 
 

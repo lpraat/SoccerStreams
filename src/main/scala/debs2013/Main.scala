@@ -2,7 +2,8 @@ package debs2013
 
 import java.util.Properties
 
-import debs2013.operators.{BallPossessionChecker, EnrichedEventMap, RawEventMap, UnusedDataFilter}
+import debs2013.operators.ball_possession.BallPossessionChecker
+import debs2013.operators.{EnrichedEventMap, RawEventMap, UnusedDataFilter}
 import org.apache.flink.api.common.serialization.SimpleStringSchema
 import org.apache.flink.api.scala._
 import org.apache.flink.streaming.api.TimeCharacteristic
@@ -29,6 +30,7 @@ object Main extends App {
     }
   })
 
+  kafkaSource.setStartFromEarliest()
 
   // Create topology
   env
@@ -37,6 +39,7 @@ object Main extends App {
     .filter(new UnusedDataFilter()).setParallelism(1)
     .flatMap(new EnrichedEventMap()).setParallelism(1)
     .flatMap(new BallPossessionChecker()).setParallelism(1)
+    .writeAsText("/Users/lpraat/develop/scep2019/results/ball_possession.txt")
     // optional windowAll here
 
   // .keyBy((el: RawEvent) => el.timestamp)

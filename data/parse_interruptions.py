@@ -26,6 +26,7 @@ def parse_interruptions(half, half_start, half_interruption_end, mode='subtract'
 
             if mode == 'subtract':
                 timestamp = int((struct_time - half_interruption_end) + half_start)
+                print(half_interruption_end)
                 print(timestamp)
                 print((timestamp - half_start) * 10 ** -12)
             else:
@@ -44,10 +45,12 @@ def parse_interruptions(half, half_start, half_interruption_end, mode='subtract'
 
 
 def parse_first_half_interruptions():
-    return parse_interruptions('oracle/Game Interruption/1st Half.csv', 10753295594424116, 3092000000000, 'subtract')
+    # 4080800000000 == (3.092 + 0.9888) * 10**12
+    return parse_interruptions('oracle/Game Interruption/1st Half.csv', 10753295594424116, 4080800000000, 'subtract')
 
 
 def parse_second_half_interruptions():
+    # TODO add estimated delay
     return parse_interruptions('oracle/Game Interruption/2nd Half.csv', 13086639146403495, 455000000000, 'subtract')
 
 

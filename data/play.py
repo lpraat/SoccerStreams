@@ -19,6 +19,7 @@ def play(producer, half_path, topic='test'):
         producer.produce(topic, event_str.encode('ascii'), callback=delivery_report)
         elapsed = time.time()
 
+        count = 0
         # Send the rest
         for line in half:
             event_str = line[:-1]
@@ -29,8 +30,16 @@ def play(producer, half_path, topic='test'):
             while time.time() - elapsed < real_diff:
                 pass
 
-            producer.poll(0)
-            producer.produce(topic, event_str.encode('ascii'), callback=delivery_report)
+            produced = False
+
+            while not produced:
+                try:
+                    producer.poll(0)
+                    producer.produce(topic, event_str.encode('ascii'), callback=delivery_report)
+                    produced = True
+                    count += 1
+                except BufferError:
+                    producer.poll(0.1)
 
         producer.flush()
 
