@@ -1,8 +1,8 @@
 package debs2013.operators.ball_possession
 
-import debs2013.Events.{EnrichedEvent}
+import debs2013.Events.EnrichedEvent
 import debs2013.Utils
-import org.apache.flink.api.common.functions.RichFlatMapFunction
+import org.apache.flink.api.common.functions.FlatMapFunction
 import org.apache.flink.api.common.state.{ListState, ListStateDescriptor}
 import org.apache.flink.api.common.typeinfo.{TypeHint, TypeInformation}
 import org.apache.flink.runtime.state.{FunctionInitializationContext, FunctionSnapshotContext}
@@ -11,7 +11,7 @@ import org.apache.flink.util.Collector
 
 import scala.collection.immutable.HashMap
 
-class BallPossessionChecker extends RichFlatMapFunction[EnrichedEvent, String] with CheckpointedFunction {
+class BallPossessionChecker extends FlatMapFunction[EnrichedEvent, String] with CheckpointedFunction {
 
   case class Possession(hits: Int, time: Long)
   case class LastHit(player: String, timestamp: Long)
@@ -43,6 +43,7 @@ class BallPossessionChecker extends RichFlatMapFunction[EnrichedEvent, String] w
 
         val c = (lastHit.timestamp - 10753295594424116L)*Math.pow(10, -12) + 3.092 + 0.9888
 
+        // TODO as first argument put the real timestamp rather than the adjusted one
         out.collect(f"${c},${enrichedEvent.player},${playerToHit(enrichedEvent.player).time},${playerToHit(enrichedEvent.player).hits}")
       }
     } else {

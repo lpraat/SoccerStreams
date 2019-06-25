@@ -3,6 +3,7 @@ package debs2013
 import java.util.Properties
 
 import debs2013.operators.ball_possession.BallPossessionChecker
+import debs2013.operators.shot_on_goal.ShotOnGoalChecker
 import debs2013.operators.{EnrichedEventMap, RawEventMap, UnusedDataFilter}
 import org.apache.flink.api.common.serialization.SimpleStringSchema
 import org.apache.flink.api.scala._
@@ -15,7 +16,6 @@ object Main extends App {
 
   // Setup environment
   val env = StreamExecutionEnvironment.getExecutionEnvironment
-  env.setParallelism(1)
   env.setStreamTimeCharacteristic(TimeCharacteristic.EventTime)
 
   // Setup source
@@ -30,16 +30,31 @@ object Main extends App {
     }
   })
 
+  // TODO add parser and set this option among the others!
   kafkaSource.setStartFromEarliest()
 
+
+  // TODO name operators
+
   // Create topology
-  env
+
+  val mainFLow =   env
     .addSource(kafkaSource)
     .map(new RawEventMap()).setParallelism(1)
     .filter(new UnusedDataFilter()).setParallelism(1)
     .flatMap(new EnrichedEventMap()).setParallelism(1)
-    .flatMap(new BallPossessionChecker()).setParallelism(1)
-    .writeAsText("/Users/lpraat/develop/scep2019/results/ball_possession.txt")
+
+
+
+  mainFLow
+    .flatMap(new ShotOnGoalChecker()).setParallelism(1)
+    .startNewChain()
+
+  //mainFLow
+   // .flatMap(new BallPossessionChecker()).setParallelism(1)
+//    .startNewChain()
+   // .writeAsText("/Users/lpraat/develop/scep2019/results/ball_possession.txt")
+
     // optional windowAll here
 
   // .keyBy((el: RawEvent) => el.timestamp)
