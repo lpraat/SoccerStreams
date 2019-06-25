@@ -23,31 +23,57 @@ class ShotOnGoalChecker extends FlatMapFunction[EnrichedEvent, String] with Chec
   private var shootingPlayer: String = ""
   private var shootingPlayerState: ListState[String] = _
 
+  private var lastUpdate: Long = 0
+  private var lastUpdateState: ListState[Long] = _
+
   override def flatMap(enrichedEvent: EnrichedEvent, out: Collector[String]): Unit = {
+
+    // TODO EXTRACT THIS
     val c: Double = (enrichedEvent.playerEvent.timestamp - 10753295594424116L)*Math.pow(10, -12) + 3.092 + 0.9888
+
     val ballIsInTheField = Utils.isInTheField(enrichedEvent.ballEvent.x, enrichedEvent.ballEvent.y)
     val isGameInterrupted = enrichedEvent.gameEvent.interrupted
 
-    // TODO add ball out of field and game interruption
-    // TODO emit on the stream while shot on goal the same player name(deviations)
-    if (true) {
-      if (!shotOnGoal && checkHit(enrichedEvent)) {
-        val inGoalAreaFunction: (Float, Float, Float) => Boolean = if (playerToTeam(enrichedEvent.player) == 1) {
-          Utils.inGoalAreaOfTeam1
+    if (ballIsInTheField && !isGameInterrupted) {
+
+      if (shotOnGoal) {
+
+        if (checkShotToGoal(enrichedEvent, getInGoalAreaFunction(shootingPlayer))) {
+
+          if (!(enrichedEvent.ballEvent.timestamp > lastUpdate)) {
+            out.collect(f"${Utils.getHourMinuteSeconds(c)},${shootingPlayer},${enrichedEvent.ballEvent.x},${enrichedEvent.ballEvent.y},${enrichedEvent.ballEvent.z},${enrichedEvent.ballEvent.vel},${enrichedEvent.ballEvent.velX},${enrichedEvent.ballEvent.velY},${enrichedEvent.ballEvent.velZ}, ${enrichedEvent.ballEvent.acc},${enrichedEvent.ballEvent.accX},${enrichedEvent.ballEvent.accY},${enrichedEvent.ballEvent.accZ}")
+            lastUpdate = enrichedEvent.ballEvent.timestamp
+          }
+
         } else {
-          Utils.inGoalAreaOfTeam2
+          shotOnGoal = false
+          shootingPlayer = ""
         }
 
-        if (checkShotToGoal(enrichedEvent, inGoalAreaFunction)) {
-          println(f"Shot on goal at ${Utils.getHourMinuteSecondsMillis(c)}")
-        }
+
+      } else if (!shotOnGoal && checkHit(enrichedEvent)) {
+
+          if (checkShotToGoal(enrichedEvent, getInGoalAreaFunction(enrichedEvent.player))) {
+            shotOnGoal = true
+            shootingPlayer = enrichedEvent.player
+            out.collect(f"${Utils.getHourMinuteSeconds(c)},${shootingPlayer},${enrichedEvent.ballEvent.x},${enrichedEvent.ballEvent.y},${enrichedEvent.ballEvent.z},${enrichedEvent.ballEvent.vel},${enrichedEvent.ballEvent.velX},${enrichedEvent.ballEvent.velY},${enrichedEvent.ballEvent.velZ}, ${enrichedEvent.ballEvent.acc},${enrichedEvent.ballEvent.accX},${enrichedEvent.ballEvent.accY},${enrichedEvent.ballEvent.accZ}")
+            lastUpdate = enrichedEvent.ballEvent.timestamp
+          }
       }
-
 
     } else {
       if (shotOnGoal) {
         shotOnGoal = false
+        shootingPlayer = ""
       }
+    }
+  }
+
+  def getInGoalAreaFunction(player: String): (Float, Float, Float) => Boolean = {
+    if (playerToTeam(player) == 1) {
+      Utils.inGoalAreaOfTeam1
+    } else {
+      Utils.inGoalAreaOfTeam2
     }
   }
 
@@ -81,16 +107,17 @@ class ShotOnGoalChecker extends FlatMapFunction[EnrichedEvent, String] with Chec
         val y_t = y0 + v0y*t
         val z_t = Math.max(z0 + v0z*t, 0)
 
+        // TODO optimize
         if (inGoalArea(x_t ,y_t, z_t)) {
-          println(t)
-          println(x0, y0, z0)
-          println(v0x, v0y, v0z)
-          println(ax, ay, az)
-          println(f"X ${x_t}")
-          println(f"Y ${y_t}")
-          println(f"Z ${z_t}")
-          println(enrichedEvent.player)
-          println("---------")
+ /*          println(t)
+           println(x0, y0, z0)
+           println(v0x, v0y, v0z)
+           println(ax, ay, az)
+           println(f"X ${x_t}")
+           println(f"Y ${y_t}")
+           println(f"Z ${z_t}")
+           println(enrichedEvent.player)
+           println("---------")*/
           true
         } else {
           loop(t + 0.01f) // TODO extract parameters
@@ -106,12 +133,19 @@ class ShotOnGoalChecker extends FlatMapFunction[EnrichedEvent, String] with Chec
     snapshotPlayerToTeamState()
     snapshotShotOnGoalState()
     snapshotShootingPlayerState()
+    snapshotLastUpdateState()
   }
 
   override def initializeState(context: FunctionInitializationContext): Unit = {
     initializePlayerToTeamState(context)
     initializeShotOnGoalState(context)
     initializeShootingPlayerState(context)
+    initializeLastUpdateState(context)
+  }
+
+  def snapshotLastUpdateState(): Unit = {
+    lastUpdateState.clear()
+    lastUpdateState.add(lastUpdate)
   }
 
   def snapshotPlayerToTeamState(): Unit = {
@@ -187,6 +221,21 @@ class ShotOnGoalChecker extends FlatMapFunction[EnrichedEvent, String] with Chec
       shotOnGoal = shotOnGoalState.get().iterator().next()
     }
   }
+
+
+  def initializeLastUpdateState(context: FunctionInitializationContext): Unit = {
+    val descriptor = new ListStateDescriptor[Long](
+      "lastUpdate",
+      TypeInformation.of(new TypeHint[Long]() {})
+    )
+
+    lastUpdateState = context.getOperatorStateStore.getListState(descriptor)
+
+    if (context.isRestored) {
+      lastUpdate = lastUpdateState.get().iterator().next()
+    }
+  }
+
 
 
 

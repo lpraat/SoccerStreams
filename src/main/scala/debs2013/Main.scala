@@ -2,7 +2,6 @@ package debs2013
 
 import java.util.Properties
 
-import debs2013.operators.ball_possession.BallPossessionChecker
 import debs2013.operators.shot_on_goal.ShotOnGoalChecker
 import debs2013.operators.{EnrichedEventMap, RawEventMap, UnusedDataFilter}
 import org.apache.flink.api.common.serialization.SimpleStringSchema
@@ -17,6 +16,7 @@ object Main extends App {
   // Setup environment
   val env = StreamExecutionEnvironment.getExecutionEnvironment
   env.setStreamTimeCharacteristic(TimeCharacteristic.EventTime)
+  env.setParallelism(1)
 
   // Setup source
   val properties = new Properties()
@@ -35,20 +35,22 @@ object Main extends App {
 
 
   // TODO name operators
+  // TODO add come docs
 
   // Create topology
 
   val mainFLow =   env
     .addSource(kafkaSource)
-    .map(new RawEventMap()).setParallelism(1)
-    .filter(new UnusedDataFilter()).setParallelism(1)
-    .flatMap(new EnrichedEventMap()).setParallelism(1)
-
+    .map(new RawEventMap())
+    .filter(new UnusedDataFilter())
+    .flatMap(new EnrichedEventMap())
 
 
   mainFLow
-    .flatMap(new ShotOnGoalChecker()).setParallelism(1)
+    .flatMap(new ShotOnGoalChecker())
     .startNewChain()
+    .writeAsText("/Users/lpraat/develop/scep2019/results/shots.txt")
+
 
   //mainFLow
    // .flatMap(new BallPossessionChecker()).setParallelism(1)

@@ -4,9 +4,9 @@ import org.apache.commons.lang3.time.DateUtils
 
 object Utils {
 
-  def getHourMinuteSecondsMillis(seconds: Double): String = {
+  def getHourMinuteSeconds(seconds: Double): String = {
     val justSeconds: Int = seconds.toInt
-    f"${justSeconds / 3600}:${(justSeconds % 3600) / 60}:${justSeconds % 60}"
+    f"${justSeconds / 3600}%02d:${(justSeconds % 3600) / 60}%02d:${justSeconds % 60}%02d:${(seconds - justSeconds)*1e3}%.0f"
   }
 
   def isGameInterruption(id: Long): Boolean = {
@@ -37,7 +37,6 @@ object Utils {
   }
 
   val deltaX2: Float = (29.880f - 22.560f) / 2.0f
-
   val Area2: Area = Area(22.560f - deltaX2, 29.880f + deltaX2, -33.968f - deltaY, -33.968f, 2.440f)
   def inGoalAreaOfTeam2(x: Float, y: Float, z: Float): Boolean = {
     x >= Area2.xMin && x <= Area2.xMax && y >= Area2.yMin && y <= Area2.yMax && z < Area2.zMax
