@@ -29,15 +29,18 @@ object Utils {
   case class Area(xMin: Float, xMax: Float, yMin: Float, yMax: Float, zMax: Float)
 
   val deltaY: Float = 2.0f/3 * 2.440f
+  val deltaZ: Float = 2.440f
+
+
   val deltaX1: Float = (29.8985f - 22.5785f) / 2.0f
 
-  val Area1: Area = Area(22.5785f - deltaX1, 29.8985f + deltaX1, 33.941f, 33.941f + deltaY, 2.440f)
+  val Area1: Area = Area(22.5785f - deltaX1, 29.8985f + deltaX1, 33.941f, 33.941f + deltaY, 2.440f + deltaZ)
   def inGoalAreaOfTeam1(x: Float, y: Float, z: Float): Boolean = {
     x >= Area1.xMin && x <= Area1.xMax && y >= Area1.yMin && y <= Area1.yMax && z < Area1.zMax
   }
 
   val deltaX2: Float = (29.880f - 22.560f) / 2.0f
-  val Area2: Area = Area(22.560f - deltaX2, 29.880f + deltaX2, -33.968f - deltaY, -33.968f, 2.440f)
+  val Area2: Area = Area(22.560f - deltaX2, 29.880f + deltaX2, -33.968f - deltaY, -33.968f, 2.440f + deltaZ)
   def inGoalAreaOfTeam2(x: Float, y: Float, z: Float): Boolean = {
     x >= Area2.xMin && x <= Area2.xMax && y >= Area2.yMin && y <= Area2.yMax && z < Area2.zMax
   }

@@ -36,7 +36,4 @@ object Events {
                            playerEvent: PlayerEvent,
                            ballEvent: BallEvent,
                            gameEvent: GameEvent)
-
-  case class BallPossessionEvent(timestamp: Double, player: String, time: Long, hits: Int)
-
 }

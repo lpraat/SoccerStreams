@@ -17,22 +17,17 @@ def parse_interruptions(half, half_start, half_interruption_end, mode='subtract'
 
             if not row:
                 continue
+
             if row[0] == 'Statistic:' or row[0] == '':
                 break
 
-            struct_time = datetime.datetime.strptime(row[2], "%H:%M:%S.%f")
-            struct_time = float(struct_time.minute * 60 + struct_time.hour * 60 * 60 + struct_time.second) * math.pow(
-                10, 12) + (struct_time.microsecond) * math.pow(10, 6)
+            t = datetime.datetime.strptime(row[2], "%H:%M:%S.%f")
+            t = float(t.minute * 60 + t.hour * 60 * 60 + t.second) * math.pow(10, 12) + t.microsecond * math.pow(10, 6)
 
             if mode == 'subtract':
-                timestamp = int((struct_time - half_interruption_end) + half_start)
-                print(half_interruption_end)
-                print(timestamp)
-                print((timestamp - half_start) * 10 ** -12)
+                timestamp = int((t - half_interruption_end) + half_start)
             else:
-                timestamp = int(struct_time) + half_start
-                print(timestamp)
-                print((timestamp - half_start) * 10 ** -12)
+                timestamp = int(t) + half_start
 
             id = 1 if begin else 0
             interruptions.append(f'{id},{timestamp},0,0,0,0,0,0,0,0,0,0,0')
@@ -50,8 +45,8 @@ def parse_first_half_interruptions():
 
 
 def parse_second_half_interruptions():
-    # TODO add estimated delay
-    return parse_interruptions('oracle/Game Interruption/2nd Half.csv', 13086639146403495, 455000000000, 'subtract')
+    # 1303200000000 == (0.455 + 0.8482) * 10**12
+    return parse_interruptions('oracle/Game Interruption/2nd Half.csv', 13086639146403495, 1303200000000, 'subtract')
 
 
 if __name__ == '__main__':

@@ -21,11 +21,6 @@ def split_dataset(full_game_path, first_half_path, second_half_path):
     first_half_interruptions = [(first_half_interruptions[i], int(first_half_interruptions[i].split(",")[1])) for i in range(len(first_half_interruptions))]
     second_half_interruptions = [(second_half_interruptions[i], int(second_half_interruptions[i].split(",")[1])) for i in range(len(second_half_interruptions))]
 
-    print(second_half_interruptions)
-
-    last_first_half_event_written = 0
-    last_second_half_event_written = 0
-
     with open(full_game_path, 'r') as full_game,  \
          open(first_half_path, 'w') as first_half, \
          open(second_half_path, 'w') as second_half: \
@@ -33,7 +28,7 @@ def split_dataset(full_game_path, first_half_path, second_half_path):
         first_half_num_events = 0
         first_half_interruption_events = 0
         second_half_num_events = 0
-        second_halfInterruption_events = 0
+        second_half_interruption_events = 0
         discarded_num_events = 0
 
         for line in full_game:
@@ -58,7 +53,7 @@ def split_dataset(full_game_path, first_half_path, second_half_path):
                 while len(second_half_interruptions) > 0 and timestamp > second_half_interruptions[0][1]:
                     interruption = second_half_interruptions.pop(0)
                     if second_half_start <= interruption[1] <= second_half_end:
-                        second_halfInterruption_events += 1
+                        second_half_interruption_events += 1
                         second_half.write(interruption[0])
                     else:
                         raise RuntimeError()
@@ -73,7 +68,7 @@ def split_dataset(full_game_path, first_half_path, second_half_path):
         print(f"Number of events in the first half {first_half_num_events}")
         print(f"Number of interruption events in the first half {first_half_interruption_events}")
         print(f"Number of events in the second half {second_half_num_events}")
-        print(f"Number of interruption events in the second half {second_halfInterruption_events}")
+        print(f"Number of interruption events in the second half {second_half_interruption_events}")
 
 
 if __name__ == '__main__':

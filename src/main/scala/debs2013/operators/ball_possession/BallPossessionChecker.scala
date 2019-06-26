@@ -1,5 +1,6 @@
 package debs2013.operators.ball_possession
 
+import debs2013.Debs2013Job.{Half, Standard, TimestampFormat}
 import debs2013.Events.EnrichedEvent
 import debs2013.Utils
 import org.apache.flink.api.common.functions.FlatMapFunction
@@ -11,40 +12,38 @@ import org.apache.flink.util.Collector
 
 import scala.collection.immutable.HashMap
 
-class BallPossessionChecker extends FlatMapFunction[EnrichedEvent, String] with CheckpointedFunction {
-
+class BallPossessionChecker(half: Half, timestampFormat: TimestampFormat) extends FlatMapFunction[EnrichedEvent, String] with CheckpointedFunction {
   case class Possession(hits: Int, time: Long)
   case class LastHit(player: String, timestamp: Long)
 
   private var lastHit: LastHit = LastHit("", 0)
   private var lastHitState: ListState[LastHit] = _
 
-  // TODO rename this variable
-  private var playerToHit: HashMap[String, Possession] = _
-  private var playerToHitState: ListState[HashMap[String, Possession]] = _
+  private var playerToPossession: HashMap[String, Possession] = _
+  private var playerToPossessionState: ListState[HashMap[String, Possession]] = _
 
   override def flatMap(enrichedEvent: EnrichedEvent, out: Collector[String]): Unit = {
     val ballIsInTheField = Utils.isInTheField(enrichedEvent.ballEvent.x, enrichedEvent.ballEvent.y)
     val isGameInterrupted = enrichedEvent.gameEvent.interrupted
 
     if (ballIsInTheField && !isGameInterrupted) {
-      val currPossession = playerToHit(enrichedEvent.player)
+      val currPossession = playerToPossession(enrichedEvent.player)
 
       if (checkHit(enrichedEvent)) {
         if (enrichedEvent.player != lastHit.player) {
-          playerToHit = playerToHit.updated(enrichedEvent.player, currPossession.copy(hits = currPossession.hits + 1))
+          playerToPossession = playerToPossession.updated(enrichedEvent.player, currPossession.copy(hits = currPossession.hits + 1))
         } else {
-          playerToHit = playerToHit.updated(enrichedEvent.player, currPossession.copy(time = currPossession.time + enrichedEvent.playerEvent.timestamp - lastHit.timestamp))
+          playerToPossession = playerToPossession.updated(enrichedEvent.player, currPossession.copy(time = currPossession.time + enrichedEvent.playerEvent.timestamp - lastHit.timestamp))
         }
 
         lastHit = LastHit(enrichedEvent.player, enrichedEvent.playerEvent.timestamp)
 
-        // println(f"Touch at ${(enrichedEvent.playerEvent.timestamp - 10753295594424116L)*Math.pow(10, -12) + 3.092 + 0.9888} seconds")
-
-        val c = (lastHit.timestamp - 10753295594424116L)*Math.pow(10, -12) + 3.092 + 0.9888
-
-        // TODO as first argument put the real timestamp rather than the adjusted one
-        out.collect(f"${c},${enrichedEvent.player},${playerToHit(enrichedEvent.player).time},${playerToHit(enrichedEvent.player).hits}")
+        if (timestampFormat == Standard) {
+          out.collect(f"${enrichedEvent.playerEvent.timestamp},${enrichedEvent.player},${playerToPossession(enrichedEvent.player).time},${playerToPossession(enrichedEvent.player).hits}")
+        } else {
+          val oracleLikeTimestamp = Utils.getHourMinuteSeconds((lastHit.timestamp - half.StartTime)*Math.pow(10, -12) + half.Delay)
+          out.collect(f"${oracleLikeTimestamp},${enrichedEvent.player},${playerToPossession(enrichedEvent.player).time},${playerToPossession(enrichedEvent.player).hits}")
+        }
       }
     } else {
       // Game is interrupted or ball is out of field so none is in possession of the ball right now
@@ -63,12 +62,12 @@ class BallPossessionChecker extends FlatMapFunction[EnrichedEvent, String] with 
 
   override def snapshotState(context: FunctionSnapshotContext): Unit = {
     snapshotLastHitState()
-    snapshotPlayerToHitState()
+    snapshotPlayerToPossessionState()
   }
 
   override def initializeState(context: FunctionInitializationContext): Unit = {
     initializeLastHitState(context)
-    initializePlayerToHitState(context)
+    initializePlayerToPossessionState(context)
   }
 
   def snapshotLastHitState(): Unit = {
@@ -76,9 +75,9 @@ class BallPossessionChecker extends FlatMapFunction[EnrichedEvent, String] with 
     lastHitState.add(lastHit)
   }
 
-  def snapshotPlayerToHitState(): Unit = {
-    playerToHitState.clear()
-    playerToHitState.add(playerToHit)
+  def snapshotPlayerToPossessionState(): Unit = {
+    playerToPossessionState.clear()
+    playerToPossessionState.add(playerToPossession)
   }
 
   def initializeLastHitState(context: FunctionInitializationContext): Unit = {
@@ -94,18 +93,18 @@ class BallPossessionChecker extends FlatMapFunction[EnrichedEvent, String] with 
     }
   }
 
-  def initializePlayerToHitState(context: FunctionInitializationContext): Unit = {
+  def initializePlayerToPossessionState(context: FunctionInitializationContext): Unit = {
     val descriptor = new ListStateDescriptor[HashMap[String, Possession]](
-      "playerToHit",
+      "playerToPossession",
       TypeInformation.of(new TypeHint[HashMap[String, Possession]]() {})
     )
 
-    playerToHitState = context.getOperatorStateStore.getListState(descriptor)
+    playerToPossessionState = context.getOperatorStateStore.getListState(descriptor)
 
     if (context.isRestored) {
-      playerToHit = playerToHitState.get().iterator().next()
+      playerToPossession = playerToPossessionState.get().iterator().next()
     } else {
-      playerToHit = HashMap(
+      playerToPossession = HashMap(
         "Nick Gertje" -> Possession(0, 0),
         "Dennis Dotterweich" -> Possession(0, 0),
         "Niklas Waelzlein" -> Possession(0, 0),
@@ -126,6 +125,4 @@ class BallPossessionChecker extends FlatMapFunction[EnrichedEvent, String] with 
       )
     }
   }
-
-
 }
