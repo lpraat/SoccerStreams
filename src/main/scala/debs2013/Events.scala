@@ -29,11 +29,9 @@ object Events {
                          velX: Float, velY: Float, velZ: Float,
                          accX: Float, accY: Float, accZ: Float)
 
-  case class GameEvent(id: Long, timestamp: Long, interrupted: Boolean)
-
 
   case class EnrichedEvent(player: String, kind: String,
                            playerEvent: PlayerEvent,
                            ballEvent: BallEvent,
-                           gameEvent: GameEvent)
+                           gameInterrupted: Boolean)
 }

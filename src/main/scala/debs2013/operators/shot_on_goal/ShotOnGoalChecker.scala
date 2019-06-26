@@ -28,7 +28,7 @@ class ShotOnGoalChecker(half: Half, timestampFormat: TimestampFormat) extends Fl
 
   override def flatMap(enrichedEvent: EnrichedEvent, out: Collector[String]): Unit = {
     val ballIsInTheField = Utils.isInTheField(enrichedEvent.ballEvent.x, enrichedEvent.ballEvent.y)
-    val isGameInterrupted = enrichedEvent.gameEvent.interrupted
+    val isGameInterrupted = enrichedEvent.gameInterrupted
 
     if (ballIsInTheField && !isGameInterrupted) {
 

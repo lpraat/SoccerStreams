@@ -13,19 +13,18 @@ import scala.collection.immutable.HashMap
 
 class EnrichedEventMap extends RichFlatMapFunction[RawEvent, EnrichedEvent] with CheckpointedFunction {
   private var ballState: ListState[BallEvent] = _
-  private var gameInterruptedState: ListState[GameEvent] = _
+  private var gameInterruptedState: ListState[Boolean] = _
 
   private var ball: BallEvent = _
-  private var gameInterrupted: GameEvent = GameEvent(0, 0, false)
-
+  private var gameInterrupted: Boolean = false
   private var sensorPlayerMapping: HashMap[Long, (String, String)] = _
 
   override def flatMap(rawEvent: RawEvent, collector: Collector[EnrichedEvent]): Unit = {
     if (Utils.isGameInterruption(rawEvent.id)) {
       if (rawEvent.id == 1) {
-        gameInterrupted = GameEvent(rawEvent.id, rawEvent.timestamp, true)
+        gameInterrupted = true
       } else {
-        gameInterrupted = GameEvent(rawEvent.id, rawEvent.timestamp, false)
+        gameInterrupted = false
       }
     } else if (Utils.isBall(rawEvent.id)) {
       if (Utils.isInTheField(rawEvent.x, rawEvent.y)) {
@@ -159,9 +158,9 @@ class EnrichedEventMap extends RichFlatMapFunction[RawEvent, EnrichedEvent] with
   }
 
   def initializeGameInterruptedState(context: FunctionInitializationContext): Unit = {
-    val descriptor = new ListStateDescriptor[GameEvent](
+    val descriptor = new ListStateDescriptor[Boolean](
       "gameInterrupted",
-      TypeInformation.of(new TypeHint[GameEvent]() {})
+      TypeInformation.of(new TypeHint[Boolean]() {})
     )
 
     gameInterruptedState = context.getOperatorStateStore.getListState(descriptor)
