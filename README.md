@@ -1,19 +1,16 @@
-# scep2019
+# SCEP2019 project
+<p align="center">
+    <img src="https://static01.nyt.com/newsgraphics/2018/05/17/soccer-world-cup-var/97f7b9c0c71def8f71d8bfbd83154f717f766db0/var-square.gif" width="300" height="200" />
+</p>
 
-Start zookeper
-- ```bin/zookeeper-server-start.sh config/zookeeper.properties```
-   
-Start a broker
-- ```bin/kafka-server-start.sh config/server.properties```
+## Problem
+foo bar baz
 
-List topics
-- ```bin/kafka-topics.sh --list --bootstrap-server localhost:9092```
+## Query 1
+foo bar baz
 
-Run a consumer
-- ```bin/kafka-console-consumer.sh --bootstrap-server localhost:9092 --topic test --from-beginning```
+## Query 2
+foo bar baz
 
-Clear a topic
-- ```bin/kafka-topics.sh --zookeeper localhost:2181 --delete --topic test```
-
-### TODO
-exact environment + steps(use 3 brokers) + steps to test fault tolerance
+## How to run
+foo bar baz
