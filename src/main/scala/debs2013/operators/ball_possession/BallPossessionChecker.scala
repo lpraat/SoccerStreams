@@ -3,24 +3,29 @@ package debs2013.operators.ball_possession
 import debs2013.Debs2013Job.{Half, Standard, TimestampFormat}
 import debs2013.Events.EnrichedEvent
 import debs2013.Utils
-import org.apache.flink.api.common.functions.FlatMapFunction
+import org.apache.flink.api.common.functions.{FlatMapFunction, RichFlatMapFunction}
 import org.apache.flink.api.common.state.{ListState, ListStateDescriptor}
 import org.apache.flink.api.common.typeinfo.{TypeHint, TypeInformation}
+import org.apache.flink.configuration.Configuration
+import org.apache.flink.dropwizard.metrics.DropwizardMeterWrapper
+import org.apache.flink.metrics.Meter
 import org.apache.flink.runtime.state.{FunctionInitializationContext, FunctionSnapshotContext}
 import org.apache.flink.streaming.api.checkpoint.CheckpointedFunction
 import org.apache.flink.util.Collector
 
 import scala.collection.immutable.HashMap
 
-class BallPossessionChecker(half: Half, timestampFormat: TimestampFormat) extends FlatMapFunction[EnrichedEvent, String] with CheckpointedFunction {
+class BallPossessionChecker(half: Half, timestampFormat: TimestampFormat) extends RichFlatMapFunction[EnrichedEvent, String] with CheckpointedFunction {
   case class Possession(hits: Int, time: Long)
   case class LastHit(player: String, timestamp: Long)
 
   private var lastHit: LastHit = LastHit("", 0)
-  private var lastHitState: ListState[LastHit] = _
+  @transient private var lastHitState: ListState[LastHit] = _
 
   private var playerToPossession: HashMap[String, Possession] = _
-  private var playerToPossessionState: ListState[HashMap[String, Possession]] = _
+  @transient private var playerToPossessionState: ListState[HashMap[String, Possession]] = _
+
+  @transient private var meter: Meter = _
 
   override def flatMap(enrichedEvent: EnrichedEvent, out: Collector[String]): Unit = {
     val ballIsInTheField = Utils.isInTheField(enrichedEvent.ballEvent.x, enrichedEvent.ballEvent.y)
@@ -50,6 +55,7 @@ class BallPossessionChecker(half: Half, timestampFormat: TimestampFormat) extend
       lastHit = LastHit("", 0)
     }
 
+    meter.markEvent()
   }
 
   def checkHit(enrichedEvent: EnrichedEvent): Boolean = {
@@ -58,6 +64,12 @@ class BallPossessionChecker(half: Half, timestampFormat: TimestampFormat) extend
       enrichedEvent.playerEvent.x, enrichedEvent.playerEvent.y, enrichedEvent.playerEvent.z,
       enrichedEvent.ballEvent.x, enrichedEvent.ballEvent.y, enrichedEvent.ballEvent.z
     ) < 1
+  }
+
+  override def open(parameters: Configuration): Unit = {
+    this.meter = getRuntimeContext
+      .getMetricGroup
+      .meter("AverageThroughput", new DropwizardMeterWrapper(new com.codahale.metrics.Meter()))
   }
 
   override def snapshotState(context: FunctionSnapshotContext): Unit = {

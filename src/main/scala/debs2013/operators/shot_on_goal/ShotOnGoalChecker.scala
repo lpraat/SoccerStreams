@@ -3,9 +3,12 @@ package debs2013.operators.shot_on_goal
 import debs2013.Debs2013Job.{Half, Standard, TimestampFormat}
 import debs2013.Events.EnrichedEvent
 import debs2013.Utils
-import org.apache.flink.api.common.functions.FlatMapFunction
+import org.apache.flink.api.common.functions.{FlatMapFunction, RichFlatMapFunction}
 import org.apache.flink.api.common.state.{ListState, ListStateDescriptor}
 import org.apache.flink.api.common.typeinfo.{TypeHint, TypeInformation}
+import org.apache.flink.configuration.Configuration
+import org.apache.flink.dropwizard.metrics.DropwizardMeterWrapper
+import org.apache.flink.metrics.Meter
 import org.apache.flink.runtime.state.{FunctionInitializationContext, FunctionSnapshotContext}
 import org.apache.flink.streaming.api.checkpoint.CheckpointedFunction
 import org.apache.flink.util.Collector
@@ -13,18 +16,20 @@ import org.apache.flink.util.Collector
 import scala.annotation.tailrec
 import scala.collection.immutable.HashMap
 
-class ShotOnGoalChecker(half: Half, timestampFormat: TimestampFormat) extends FlatMapFunction[EnrichedEvent, String] with CheckpointedFunction {
+class ShotOnGoalChecker(half: Half, timestampFormat: TimestampFormat) extends RichFlatMapFunction[EnrichedEvent, String] with CheckpointedFunction {
   private var playerToTeam: HashMap[String, Int] = _
-  private var playerToTeamState: ListState[HashMap[String, Int]] = _
+  @transient private var playerToTeamState: ListState[HashMap[String, Int]] = _
 
   private var shotOnGoal: Boolean = false
-  private var shotOnGoalState: ListState[Boolean] = _
+  @transient private var shotOnGoalState: ListState[Boolean] = _
 
   private var shootingPlayer: String = ""
-  private var shootingPlayerState: ListState[String] = _
+  @transient private var shootingPlayerState: ListState[String] = _
 
   private var lastUpdate: Long = 0
-  private var lastUpdateState: ListState[Long] = _
+  @transient private var lastUpdateState: ListState[Long] = _
+
+  @transient private var meter: Meter = _
 
   override def flatMap(enrichedEvent: EnrichedEvent, out: Collector[String]): Unit = {
     val ballIsInTheField = Utils.isInTheField(enrichedEvent.ballEvent.x, enrichedEvent.ballEvent.y)
@@ -76,6 +81,8 @@ class ShotOnGoalChecker(half: Half, timestampFormat: TimestampFormat) extends Fl
         shootingPlayer = ""
       }
     }
+
+    meter.markEvent()
   }
 
   def getInGoalAreaFunction(player: String): (Float, Float, Float) => Boolean = {
@@ -121,6 +128,13 @@ class ShotOnGoalChecker(half: Half, timestampFormat: TimestampFormat) extends Fl
     }
 
     loop(0f)
+  }
+
+
+  override def open(parameters: Configuration): Unit = {
+    this.meter = getRuntimeContext
+      .getMetricGroup
+      .meter("AverageThroughput", new DropwizardMeterWrapper(new com.codahale.metrics.Meter()))
   }
 
 
