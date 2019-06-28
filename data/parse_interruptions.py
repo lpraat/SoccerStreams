@@ -40,13 +40,13 @@ def parse_interruptions(half, half_start, half_interruption_end, mode='subtract'
 
 
 def parse_first_half_interruptions():
-    # 4080800000000 == (3.092 + 0.9888) * 10**12
-    return parse_interruptions('oracle/Game Interruption/1st Half.csv', 10753295594424116, 4080800000000, 'subtract')
+    # 4080800000000 == (3.092 + 0.9885) * 10**12
+    return parse_interruptions('oracle/Game Interruption/1st Half.csv', 10753295594424116, 4080500000000, 'subtract')
 
 
 def parse_second_half_interruptions():
-    # 1303200000000 == (0.455 + 0.8482) * 10**12
-    return parse_interruptions('oracle/Game Interruption/2nd Half.csv', 13086639146403495, 1303200000000, 'subtract')
+    # 1303200000000 == (0.455 + 0.84795) * 10**12
+    return parse_interruptions('oracle/Game Interruption/2nd Half.csv', 13086639146403495, 1302950000000, 'subtract')
 
 
 if __name__ == '__main__':

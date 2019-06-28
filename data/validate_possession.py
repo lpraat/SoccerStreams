@@ -61,8 +61,8 @@ def build_target_possessions_first_half():
     possessions = {}
     for player in players:
         file_name = f"oracle/Ball Possession/1st Half/{player}.csv"
-        # [(12397999951273772 - 10753295594424116L) * 10 ** -12 + 3.092 + 0.9888] * 10**12
-        player_possession = build_target_possession(file_name, 1648785156849656)
+        # [(12397999951273772 - 10753295594424116L) * 10 ** -12 + 3.092 + 0.9885] * 10**12
+        player_possession = build_target_possession(file_name, 1648784856849656)
         possessions[player] = player_possession
 
     return possessions
@@ -92,8 +92,8 @@ def build_target_possessions_second_half():
     possessions = {}
     for player in players:
         file_name = f"oracle/Ball Possession/2nd Half/{player}.csv"
-        # [(14879639049922641 - 13086639146403495) * 10 ** -12 + 0.455 + 0.8482] * 10**12
-        player_possession = build_target_possession(file_name, 1794303103519146)
+        # [(14879639049922641 - 13086639146403495) * 10 ** -12 + 0.455 + 0.84795] * 10**12
+        player_possession = build_target_possession(file_name, 1794302853519146)
         possessions[player] = player_possession
 
     return possessions

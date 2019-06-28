@@ -9,10 +9,10 @@ if __name__ == '__main__':
     # First half
     # By taking into account the delay error is down to 45 seconds from 49
 
-    errors = compute_errors_second_half()
-
+    errors = compute_errors_first_half()
+    print(sum(errors.values()))
     plt.bar([key[0:4] for key in errors.keys()], errors.values(), color='g')
     plt.ylabel('Error in seconds')
     plt.xlabel('Player')
-    plt.ylim(0, 10)
+    plt.ylim(0, 60)
     plt.show()

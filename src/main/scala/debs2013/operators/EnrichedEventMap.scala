@@ -12,11 +12,15 @@ import org.apache.flink.util.Collector
 import scala.collection.immutable.HashMap
 
 class EnrichedEventMap extends RichFlatMapFunction[RawEvent, EnrichedEvent] with CheckpointedFunction {
-  private var ballState: ListState[BallEvent] = _
-  private var gameInterruptedState: ListState[Boolean] = _
+  private var gameInterrupted: Boolean = false
+  @transient private var gameInterruptedState: ListState[Boolean] = _
 
   private var ball: BallEvent = _
-  private var gameInterrupted: Boolean = false
+  @transient private var ballState: ListState[BallEvent] = _
+
+  private var pending: Vector[PlayerEvent] = Vector()
+  @transient private var pendingState: ListState[Vector[PlayerEvent]] = _
+
   private var sensorPlayerMapping: HashMap[Long, (String, String)] = _
 
   override def flatMap(rawEvent: RawEvent, collector: Collector[EnrichedEvent]): Unit = {
@@ -29,9 +33,13 @@ class EnrichedEventMap extends RichFlatMapFunction[RawEvent, EnrichedEvent] with
     } else if (Utils.isBall(rawEvent.id)) {
       if (Utils.isInTheField(rawEvent.x, rawEvent.y)) {
         ball = rawEvent.toBallEvent
+        if (pending.nonEmpty) {
+          pending.foreach(playerEvent => collector.collect(enrichRawEvent(playerEvent)))
+          pending = Vector()
+        }
       }
     } else {
-      collector.collect(enrichRawEvent(rawEvent.toPlayerEvent))
+      pending = pending :+ rawEvent.toPlayerEvent
     }
   }
 
@@ -135,6 +143,7 @@ class EnrichedEventMap extends RichFlatMapFunction[RawEvent, EnrichedEvent] with
   override def snapshotState(context: FunctionSnapshotContext): Unit = {
     snapshotBallState()
     snapshotGameInterruptedState()
+    snapshotPendingState()
   }
 
   override def initializeState(context: FunctionInitializationContext): Unit = {
@@ -142,6 +151,7 @@ class EnrichedEventMap extends RichFlatMapFunction[RawEvent, EnrichedEvent] with
 
     initializeBallState(context)
     initializeGameInterruptedState(context)
+    initializePendingState(context)
   }
 
   def initializeBallState(context: FunctionInitializationContext): Unit = {
@@ -170,6 +180,19 @@ class EnrichedEventMap extends RichFlatMapFunction[RawEvent, EnrichedEvent] with
     }
   }
 
+  def initializePendingState(context: FunctionInitializationContext): Unit = {
+    val descriptor = new ListStateDescriptor[Vector[PlayerEvent]](
+      "pendingState",
+      TypeInformation.of(new TypeHint[Vector[PlayerEvent]]() {})
+    )
+
+    pendingState = context.getOperatorStateStore.getListState(descriptor)
+
+    if (context.isRestored) {
+      pending = pendingState.get().iterator().next()
+    }
+  }
+
   def snapshotBallState(): Unit = {
     ballState.clear()
     ballState.add(ball)
@@ -178,5 +201,10 @@ class EnrichedEventMap extends RichFlatMapFunction[RawEvent, EnrichedEvent] with
   def snapshotGameInterruptedState(): Unit = {
     gameInterruptedState.clear()
     gameInterruptedState.add(gameInterrupted)
+  }
+
+  def snapshotPendingState(): Unit = {
+    pendingState.clear()
+    pendingState.add(pending)
   }
 }

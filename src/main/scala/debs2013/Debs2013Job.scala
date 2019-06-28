@@ -27,7 +27,7 @@ object Debs2013Job {
   case object FirstHalf extends Half {
     override val Name: String = "first_half"
     override val StartTime: Long = 10753295594424116L
-    override val Delay: Double =  3.092 + 0.9888
+    override val Delay: Double =  3.092 + 0.9885
     override val Team: Int = 1
   }
 
@@ -35,7 +35,7 @@ object Debs2013Job {
   case object SecondHalf extends Half {
     override val Name: String = "second_half"
     override val StartTime: Long = 13086639146403495L
-    override val Delay: Double = 0.455 + 0.8482
+    override val Delay: Double = 0.455 + 0.84795
     override val Team: Int = 2
   }
 

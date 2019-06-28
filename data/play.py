@@ -6,7 +6,7 @@ def delivery_report(err, msg):
     """ Called once for each message produced to indicate delivery result.
         Triggered by poll() or flush(). """
     if err is not None:
-        print('Message delivery failed: {}'.format(err))
+        print(f'Message delivery failed: {err}')
 
 
 def play(producer, half_path, topic='test'):

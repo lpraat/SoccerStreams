@@ -9,7 +9,7 @@ object Main extends App {
 
   Debs2013Job.build(
     half = FirstHalf,
-    timestampFormat = OracleLike,
+    timestampFormat = Standard,
     startFromEarliest = true)
 
 }

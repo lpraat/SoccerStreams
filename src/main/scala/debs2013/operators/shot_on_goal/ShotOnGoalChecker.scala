@@ -39,24 +39,28 @@ class ShotOnGoalChecker(half: Half, timestampFormat: TimestampFormat) extends Ri
 
       if (shotOnGoal) {
 
-        if (checkShotToGoal(enrichedEvent, getInGoalAreaFunction(shootingPlayer))) {
+        if (enrichedEvent.ballEvent.timestamp > lastUpdate) {
 
-          if (enrichedEvent.ballEvent.timestamp > lastUpdate) {
+          // Here we should check if the player is the one who has initiated the shot.
+          // But shots on goal can be deviated by another player
+          // and we still want them to be attributed to the initial shooting player
+
+          if (checkShotToGoal(enrichedEvent, getInGoalAreaFunction(shootingPlayer))) {
+
             if (timestampFormat == Standard) {
-              out.collect(f"${enrichedEvent.playerEvent.timestamp},${shootingPlayer},${enrichedEvent.ballEvent.x},${enrichedEvent.ballEvent.y},${enrichedEvent.ballEvent.z},${enrichedEvent.ballEvent.vel},${enrichedEvent.ballEvent.velX},${enrichedEvent.ballEvent.velY},${enrichedEvent.ballEvent.velZ}, ${enrichedEvent.ballEvent.acc},${enrichedEvent.ballEvent.accX},${enrichedEvent.ballEvent.accY},${enrichedEvent.ballEvent.accZ}")
+              out.collect(f"${enrichedEvent.ballEvent.timestamp},${shootingPlayer},${enrichedEvent.ballEvent.x},${enrichedEvent.ballEvent.y},${enrichedEvent.ballEvent.z},${enrichedEvent.ballEvent.vel},${enrichedEvent.ballEvent.velX},${enrichedEvent.ballEvent.velY},${enrichedEvent.ballEvent.velZ}, ${enrichedEvent.ballEvent.acc},${enrichedEvent.ballEvent.accX},${enrichedEvent.ballEvent.accY},${enrichedEvent.ballEvent.accZ}")
             } else {
-              val oracleLikeTimestamp = Utils.getHourMinuteSeconds((enrichedEvent.playerEvent.timestamp - half.StartTime)*Math.pow(10, -12) + half.Delay)
+              val oracleLikeTimestamp = Utils.getHourMinuteSeconds((enrichedEvent.ballEvent.timestamp - half.StartTime) * Math.pow(10, -12) + half.Delay)
               out.collect(f"${oracleLikeTimestamp},${shootingPlayer},${enrichedEvent.ballEvent.x},${enrichedEvent.ballEvent.y},${enrichedEvent.ballEvent.z},${enrichedEvent.ballEvent.vel},${enrichedEvent.ballEvent.velX},${enrichedEvent.ballEvent.velY},${enrichedEvent.ballEvent.velZ}, ${enrichedEvent.ballEvent.acc},${enrichedEvent.ballEvent.accX},${enrichedEvent.ballEvent.accY},${enrichedEvent.ballEvent.accZ}")
             }
 
             lastUpdate = enrichedEvent.ballEvent.timestamp
+
+          } else {
+            shotOnGoal = false
+            shootingPlayer = ""
           }
-
-        } else {
-          shotOnGoal = false
-          shootingPlayer = ""
         }
-
 
       } else if (!shotOnGoal && checkHit(enrichedEvent)) {
 
@@ -65,9 +69,9 @@ class ShotOnGoalChecker(half: Half, timestampFormat: TimestampFormat) extends Ri
             shootingPlayer = enrichedEvent.player
 
             if (timestampFormat == Standard) {
-              out.collect(f"${enrichedEvent.playerEvent.timestamp},${shootingPlayer},${enrichedEvent.ballEvent.x},${enrichedEvent.ballEvent.y},${enrichedEvent.ballEvent.z},${enrichedEvent.ballEvent.vel},${enrichedEvent.ballEvent.velX},${enrichedEvent.ballEvent.velY},${enrichedEvent.ballEvent.velZ}, ${enrichedEvent.ballEvent.acc},${enrichedEvent.ballEvent.accX},${enrichedEvent.ballEvent.accY},${enrichedEvent.ballEvent.accZ}")
+              out.collect(f"${enrichedEvent.ballEvent.timestamp},${shootingPlayer},${enrichedEvent.ballEvent.x},${enrichedEvent.ballEvent.y},${enrichedEvent.ballEvent.z},${enrichedEvent.ballEvent.vel},${enrichedEvent.ballEvent.velX},${enrichedEvent.ballEvent.velY},${enrichedEvent.ballEvent.velZ}, ${enrichedEvent.ballEvent.acc},${enrichedEvent.ballEvent.accX},${enrichedEvent.ballEvent.accY},${enrichedEvent.ballEvent.accZ}")
             } else {
-              val oracleLikeTimestamp = Utils.getHourMinuteSeconds((enrichedEvent.playerEvent.timestamp - half.StartTime)*Math.pow(10, -12) + half.Delay)
+              val oracleLikeTimestamp = Utils.getHourMinuteSeconds((enrichedEvent.ballEvent.timestamp - half.StartTime)*Math.pow(10, -12) + half.Delay)
               out.collect(f"${oracleLikeTimestamp},${shootingPlayer},${enrichedEvent.ballEvent.x},${enrichedEvent.ballEvent.y},${enrichedEvent.ballEvent.z},${enrichedEvent.ballEvent.vel},${enrichedEvent.ballEvent.velX},${enrichedEvent.ballEvent.velY},${enrichedEvent.ballEvent.velZ}, ${enrichedEvent.ballEvent.acc},${enrichedEvent.ballEvent.accX},${enrichedEvent.ballEvent.accY},${enrichedEvent.ballEvent.accZ}")
             }
 

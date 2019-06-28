@@ -28,7 +28,9 @@ class BallPossessionChecker(half: Half, timestampFormat: TimestampFormat) extend
   @transient private var meter: Meter = _
 
   override def flatMap(enrichedEvent: EnrichedEvent, out: Collector[String]): Unit = {
+    // TODO This check is actually useless
     val ballIsInTheField = Utils.isInTheField(enrichedEvent.ballEvent.x, enrichedEvent.ballEvent.y)
+
     val isGameInterrupted = enrichedEvent.gameInterrupted
 
     if (ballIsInTheField && !isGameInterrupted) {
@@ -38,13 +40,13 @@ class BallPossessionChecker(half: Half, timestampFormat: TimestampFormat) extend
         if (enrichedEvent.player != lastHit.player) {
           playerToPossession = playerToPossession.updated(enrichedEvent.player, currPossession.copy(hits = currPossession.hits + 1))
         } else {
-          playerToPossession = playerToPossession.updated(enrichedEvent.player, currPossession.copy(time = currPossession.time + enrichedEvent.playerEvent.timestamp - lastHit.timestamp))
+          playerToPossession = playerToPossession.updated(enrichedEvent.player, currPossession.copy(time = currPossession.time + enrichedEvent.ballEvent.timestamp - lastHit.timestamp))
         }
 
-        lastHit = LastHit(enrichedEvent.player, enrichedEvent.playerEvent.timestamp)
+        lastHit = LastHit(enrichedEvent.player, enrichedEvent.ballEvent.timestamp)
 
         if (timestampFormat == Standard) {
-          out.collect(f"${enrichedEvent.playerEvent.timestamp},${enrichedEvent.player},${playerToPossession(enrichedEvent.player).time},${playerToPossession(enrichedEvent.player).hits}")
+          out.collect(f"${enrichedEvent.ballEvent.timestamp},${enrichedEvent.player},${playerToPossession(enrichedEvent.player).time},${playerToPossession(enrichedEvent.player).hits}")
         } else {
           val oracleLikeTimestamp = Utils.getHourMinuteSeconds((lastHit.timestamp - half.StartTime)*Math.pow(10, -12) + half.Delay)
           out.collect(f"${oracleLikeTimestamp},${enrichedEvent.player},${playerToPossession(enrichedEvent.player).time},${playerToPossession(enrichedEvent.player).hits}")

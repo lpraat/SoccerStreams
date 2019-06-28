@@ -5,7 +5,7 @@ def delivery_report(err, msg):
     """ Called once for each message produced to indicate delivery result.
         Triggered by poll() or flush(). """
     if err is not None:
-        print('Message delivery failed: {}'.format(err))
+        print(f'Message delivery failed: {err}')
 
 
 def play(producer, half_path, topic='test'):
@@ -38,5 +38,5 @@ def play(producer, half_path, topic='test'):
 
 if __name__ == '__main__':
     producer = Producer({'bootstrap.servers': 'localhost:9092'})
-    play(producer, 'first_half.txt', 'first_half_full')
-    #play(producer, 'second_half.txt', 'second_half_full')
+    #play(producer, 'first_half.txt', 'first_half_full')
+    play(producer, 'second_half.txt', 'second_half_full')
