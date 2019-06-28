@@ -22,7 +22,7 @@ class BallPossessionChecker(half: Half, timestampFormat: TimestampFormat) extend
   private var lastHit: LastHit = LastHit("", 0)
   @transient private var lastHitState: ListState[LastHit] = _
 
-  private var playerToPossession: HashMap[String, Possession] = _
+  @transient private var playerToPossession: HashMap[String, Possession] = _
   @transient private var playerToPossessionState: ListState[HashMap[String, Possession]] = _
 
   @transient private var meter: Meter = _

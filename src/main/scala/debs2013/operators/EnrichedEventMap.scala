@@ -21,7 +21,7 @@ class EnrichedEventMap extends RichFlatMapFunction[RawEvent, EnrichedEvent] with
   private var pending: Vector[PlayerEvent] = Vector()
   @transient private var pendingState: ListState[Vector[PlayerEvent]] = _
 
-  private var sensorPlayerMapping: HashMap[Long, (String, String)] = _
+  @transient private var sensorPlayerMapping: HashMap[Long, (String, String)] = _
 
   override def flatMap(rawEvent: RawEvent, collector: Collector[EnrichedEvent]): Unit = {
     if (Utils.isGameInterruption(rawEvent.id)) {

@@ -3,7 +3,7 @@ package debs2013.operators.shot_on_goal
 import debs2013.Debs2013Job.{Half, Standard, TimestampFormat}
 import debs2013.Events.EnrichedEvent
 import debs2013.Utils
-import org.apache.flink.api.common.functions.{FlatMapFunction, RichFlatMapFunction}
+import org.apache.flink.api.common.functions.{RichFlatMapFunction}
 import org.apache.flink.api.common.state.{ListState, ListStateDescriptor}
 import org.apache.flink.api.common.typeinfo.{TypeHint, TypeInformation}
 import org.apache.flink.configuration.Configuration
@@ -17,7 +17,7 @@ import scala.annotation.tailrec
 import scala.collection.immutable.HashMap
 
 class ShotOnGoalChecker(half: Half, timestampFormat: TimestampFormat) extends RichFlatMapFunction[EnrichedEvent, String] with CheckpointedFunction {
-  private var playerToTeam: HashMap[String, Int] = _
+  @transient private var playerToTeam: HashMap[String, Int] = _
   @transient private var playerToTeamState: ListState[HashMap[String, Int]] = _
 
   private var shotOnGoal: Boolean = false
