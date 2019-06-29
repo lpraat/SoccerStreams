@@ -3,7 +3,7 @@ package debs2013.operators
 import debs2013.Events._
 import debs2013.Utils
 import org.apache.flink.api.common.functions.RichFlatMapFunction
-import org.apache.flink.api.common.state.{ListState, ListStateDescriptor, ValueState, ValueStateDescriptor}
+import org.apache.flink.api.common.state.{ListState, ListStateDescriptor}
 import org.apache.flink.api.common.typeinfo.{TypeHint, TypeInformation}
 import org.apache.flink.runtime.state.{FunctionInitializationContext, FunctionSnapshotContext}
 import org.apache.flink.streaming.api.checkpoint.CheckpointedFunction
@@ -182,7 +182,7 @@ class EnrichedEventMap extends RichFlatMapFunction[RawEvent, EnrichedEvent] with
 
   def initializePendingState(context: FunctionInitializationContext): Unit = {
     val descriptor = new ListStateDescriptor[Vector[PlayerEvent]](
-      "pendingState",
+      "pending",
       TypeInformation.of(new TypeHint[Vector[PlayerEvent]]() {})
     )
 
@@ -195,7 +195,10 @@ class EnrichedEventMap extends RichFlatMapFunction[RawEvent, EnrichedEvent] with
 
   def snapshotBallState(): Unit = {
     ballState.clear()
-    ballState.add(ball)
+
+    if (ball != null) {
+      ballState.add(ball)
+    }
   }
 
   def snapshotGameInterruptedState(): Unit = {

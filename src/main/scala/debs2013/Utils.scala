@@ -1,7 +1,5 @@
 package debs2013
 
-import org.apache.commons.lang3.time.DateUtils
-
 object Utils {
 
   def getHourMinuteSeconds(seconds: Double): String = {

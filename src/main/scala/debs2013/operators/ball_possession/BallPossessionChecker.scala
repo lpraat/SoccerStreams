@@ -3,7 +3,7 @@ package debs2013.operators.ball_possession
 import debs2013.Debs2013Job.{Half, Standard, TimestampFormat}
 import debs2013.Events.EnrichedEvent
 import debs2013.Utils
-import org.apache.flink.api.common.functions.{FlatMapFunction, RichFlatMapFunction}
+import org.apache.flink.api.common.functions.RichFlatMapFunction
 import org.apache.flink.api.common.state.{ListState, ListStateDescriptor}
 import org.apache.flink.api.common.typeinfo.{TypeHint, TypeInformation}
 import org.apache.flink.configuration.Configuration
@@ -15,10 +15,10 @@ import org.apache.flink.util.Collector
 
 import scala.collection.immutable.HashMap
 
-class BallPossessionChecker(half: Half, timestampFormat: TimestampFormat) extends RichFlatMapFunction[EnrichedEvent, String] with CheckpointedFunction {
-  case class Possession(hits: Int, time: Long)
-  case class LastHit(player: String, timestamp: Long)
+case class Possession(hits: Int, time: Long)
+case class LastHit(player: String, timestamp: Long)
 
+class BallPossessionChecker(half: Half, timestampFormat: TimestampFormat) extends RichFlatMapFunction[EnrichedEvent, String] with CheckpointedFunction {
   private var lastHit: LastHit = LastHit("", 0)
   @transient private var lastHitState: ListState[LastHit] = _
 

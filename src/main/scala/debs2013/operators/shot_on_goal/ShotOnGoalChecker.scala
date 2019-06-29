@@ -3,7 +3,7 @@ package debs2013.operators.shot_on_goal
 import debs2013.Debs2013Job.{Half, Standard, TimestampFormat}
 import debs2013.Events.EnrichedEvent
 import debs2013.Utils
-import org.apache.flink.api.common.functions.{RichFlatMapFunction}
+import org.apache.flink.api.common.functions.RichFlatMapFunction
 import org.apache.flink.api.common.state.{ListState, ListStateDescriptor}
 import org.apache.flink.api.common.typeinfo.{TypeHint, TypeInformation}
 import org.apache.flink.configuration.Configuration
@@ -223,15 +223,15 @@ class ShotOnGoalChecker(half: Half, timestampFormat: TimestampFormat) extends Ri
   }
 
   def initializeShootingPlayerState(context: FunctionInitializationContext): Unit = {
-    val descriptor = new ListStateDescriptor[Boolean](
+    val descriptor = new ListStateDescriptor[String](
       "shootingPlayer",
-      TypeInformation.of(new TypeHint[Boolean]() {})
+      TypeInformation.of(new TypeHint[String]() {})
     )
 
-    shotOnGoalState = context.getOperatorStateStore.getListState(descriptor)
+    shootingPlayerState = context.getOperatorStateStore.getListState(descriptor)
 
     if (context.isRestored) {
-      shotOnGoal = shotOnGoalState.get().iterator().next()
+      shootingPlayer = shootingPlayerState.get().iterator().next()
     }
   }
 
