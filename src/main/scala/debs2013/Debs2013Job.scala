@@ -2,8 +2,9 @@ package debs2013
 
 import java.util.Properties
 
-import debs2013.operators.ball_possession.BallPossessionChecker
-import debs2013.operators.shot_on_goal.ShotOnGoalChecker
+import debs2013.Events.EnrichedEvent
+import debs2013.operators.ball_possession.{BallPossessionChecker, BallPossessionMerge}
+import debs2013.operators.shot_on_goal.{ShotOnGoalChecker, ShotOnGoalMerge}
 import debs2013.operators.{EnrichedEventMap, RawEventMap, UnusedDataFilter}
 import org.apache.flink.api.common.restartstrategy.RestartStrategies
 import org.apache.flink.api.common.serialization.SimpleStringSchema
@@ -13,6 +14,8 @@ import org.apache.flink.runtime.state.filesystem.FsStateBackend
 import org.apache.flink.streaming.api.TimeCharacteristic
 import org.apache.flink.streaming.api.functions.timestamps.AscendingTimestampExtractor
 import org.apache.flink.streaming.api.scala.StreamExecutionEnvironment
+import org.apache.flink.streaming.api.windowing.assigners.TumblingProcessingTimeWindows
+import org.apache.flink.streaming.api.windowing.time.Time
 import org.apache.flink.streaming.connectors.kafka.FlinkKafkaConsumer
 
 object Debs2013Job {
@@ -47,7 +50,6 @@ object Debs2013Job {
     // Setup environment
     val env = StreamExecutionEnvironment.getExecutionEnvironment
     env.setStreamTimeCharacteristic(TimeCharacteristic.EventTime)
-    env.setParallelism(1)
 
     if (checkpointing) {
       // Enables checkpointing on file, every 5 seconds.
@@ -76,20 +78,24 @@ object Debs2013Job {
 
     // Create topology
     val mainFLow =   env
-      .addSource(kafkaSource).name("KafkaSource")
-      .map(new RawEventMap()).name("RawEventMap")
-      .filter(new UnusedDataFilter()).name("UnusedDataFilter")
-      .flatMap(new EnrichedEventMap()).name("EnrichedEventMap")
+      .addSource(kafkaSource).name("KafkaSource").setParallelism(1)
+      .map(new RawEventMap()).name("RawEventMap").setParallelism(1)
+      .filter(new UnusedDataFilter()).name("UnusedDataFilter").setParallelism(1)
+      .flatMap(new EnrichedEventMap()).name("EnrichedEventMap").setParallelism(1)
 
     // Ball possession
     mainFLow
-      .flatMap(new BallPossessionChecker(half, timestampFormat)).name("BallPossessionChecker").startNewChain()
-      .writeAsText(f"/Users/lpraat/develop/scep2019/results/${half.Name}/ball_possession.txt", WriteMode.OVERWRITE)
+      .flatMap(new BallPossessionChecker()).setParallelism(4)
+      .windowAll(TumblingProcessingTimeWindows.of(Time.milliseconds(250)))
+      .apply(new BallPossessionMerge(half, timestampFormat)).setParallelism(1).name("BallPossessionMerge")
+      .writeAsText(f"/Users/lpraat/develop/scep2019/results/${half.Name}/ball_possession.txt", WriteMode.OVERWRITE).setParallelism(1)
 
     // Shots on goal
     mainFLow
-      .flatMap(new ShotOnGoalChecker(half, timestampFormat)).startNewChain().name("ShotOnGoalChecker")
-      .writeAsText(f"/Users/lpraat/develop/scep2019/results/${half.Name}/shots.txt", WriteMode.OVERWRITE)
+      .flatMap(new ShotOnGoalChecker()).name("ShotOnGoalChecker").setParallelism(4)
+      .windowAll(TumblingProcessingTimeWindows.of(Time.milliseconds(250)))
+      .apply(new ShotOnGoalMerge(half, timestampFormat)).setParallelism(1).name("ShotOnGoalMerge")
+      .writeAsText(f"/Users/lpraat/develop/scep2019/results/${half.Name}/shots.txt", WriteMode.OVERWRITE).setParallelism(1)
 
 
     // Run topology
