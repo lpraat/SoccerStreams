@@ -11,7 +11,7 @@ import org.apache.flink.util.Collector
 
 import scala.collection.immutable.HashMap
 
-class EnrichedEventMap extends RichFlatMapFunction[RawEvent, EnrichedEvent] with CheckpointedFunction {
+class EnrichedEventFlatMap extends RichFlatMapFunction[RawEvent, EnrichedEvent] with CheckpointedFunction {
   private var gameInterrupted: Boolean = false
   @transient private var gameInterruptedState: ListState[Boolean] = _
 

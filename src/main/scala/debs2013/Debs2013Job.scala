@@ -4,7 +4,7 @@ import java.util.Properties
 
 import debs2013.operators.ball_possession.BallPossessionChecker
 import debs2013.operators.shot_on_goal.ShotOnGoalChecker
-import debs2013.operators.{EnrichedEventMap, RawEventMap, UnusedDataFilter}
+import debs2013.operators.{EnrichedEventFlatMap, RawEventMap, UnusedDataFilter}
 import org.apache.flink.api.common.restartstrategy.RestartStrategies
 import org.apache.flink.api.common.serialization.SimpleStringSchema
 import org.apache.flink.api.scala._
@@ -79,7 +79,7 @@ object Debs2013Job {
       .addSource(kafkaSource).name("KafkaSource")
       .map(new RawEventMap()).name("RawEventMap")
       .filter(new UnusedDataFilter()).name("UnusedDataFilter")
-      .flatMap(new EnrichedEventMap()).name("EnrichedEventMap")
+      .flatMap(new EnrichedEventFlatMap()).name("EnrichedEventFlatMap")
 
     // Ball possession
     mainFLow
