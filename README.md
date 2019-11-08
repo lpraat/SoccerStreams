@@ -1,5 +1,5 @@
 # SoccerStreams
-Final project for the *Stream and Complex Event Processing in the Big Data Era course @ Politecnico di Milano*.
+Fault tolerant streaming pipeline for real-time soccer match analysis built as the final project for the *Stream and Complex Event Processing in the Big Data Era course @ Politecnico di Milano*.
 
 Game data and example queries are taken from the ACM DEBS 2013 Grand Challenge.
 
